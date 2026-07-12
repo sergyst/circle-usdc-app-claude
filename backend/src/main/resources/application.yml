@@ -1,0 +1,60 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: circle-usdc-app
+  datasource:
+    url: jdbc:h2:file:./data/usdcapp;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+# ---------------------------------------------------------------------------
+# Circle configuration.
+# Get an API key at https://console.circle.com (Developers -> API & Client Keys).
+# Sandbox keys start with "TEST_API_KEY:", production keys with "LIVE_API_KEY:".
+# Never commit real values below - use environment variables in real deployments.
+# ---------------------------------------------------------------------------
+circle:
+  base-url: https://api.circle.com
+  api-key: ${CIRCLE_API_KEY:TEST_API_KEY:REPLACE_ME}
+  # 32-byte (64 hex char) entity secret generated once on your machine and
+  # registered with Circle. See backend/README.md "Entity Secret Setup".
+  entity-secret: ${CIRCLE_ENTITY_SECRET:REPLACE_WITH_64_HEX_CHAR_SECRET}
+  blockchain: ETH-SEPOLIA
+  # Wallet Set ID is created automatically on first startup if left blank,
+  # and then should be copied into this property (or the env var) so the
+  # same set of wallets is reused on every restart.
+  wallet-set-id: ${CIRCLE_WALLET_SET_ID:}
+  mint:
+    # Circle Mint (fiat <-> USDC) requires an approved, KYB'd business
+    # account. Until CIRCLE_MINT_LIVE=true is set (and real Mint
+    # credentials/bank linkage are configured on your Circle account), buy
+    # and sell orders are clearly labeled and processed in simulation mode
+    # so the full flow can be exercised end-to-end without moving real money.
+    live: ${CIRCLE_MINT_LIVE:false}
+    settlement-bank-account-id: ${CIRCLE_MINT_BANK_ACCOUNT_ID:}
+
+app:
+  # Shared secret the React frontend sends as the "X-App-Api-Key" header.
+  # This is a lightweight guard for a single-tenant internal tool, not a
+  # substitute for real user auth/OAuth2 in a multi-user production system.
+  api-key: ${APP_API_KEY:local-dev-key}
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173}
+
+logging:
+  level:
+    com.circle.usdcapp: INFO
