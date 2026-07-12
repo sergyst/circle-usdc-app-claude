@@ -17,18 +17,20 @@ import java.util.Map;
 
 /**
  * Receiving endpoints for Circle's two, separately-signed notification
- * systems:
+ * systems (see https://developers.circle.com/api-reference/webhooks):
  * <p>
  * 1. {@code /api/webhooks/circle/wallets} - Developer-Controlled Wallets
- * (W3S) notifications: transactions.inbound / transactions.outbound /
- * challenges.* / etc. Signed with X-Circle-Signature + X-Circle-Key-Id
- * (ECDSA). Configure under Notifications in the Circle Dashboard, or via
- * POST /v1/notifications/subscriptions.
+ * (W3S) "v2" notifications: transactions.inbound / transactions.outbound /
+ * challenges.* / etc. Delivered as a direct HTTPS POST from Circle and
+ * signed with X-Circle-Signature + X-Circle-Key-Id (ECDSA_SHA_256, verified
+ * against the raw body). Configure under Notifications in the Circle Console,
+ * or via POST /v2/notifications/subscriptions. There is NO SNS-style
+ * confirmation handshake for v2 - the endpoint only needs to return 2xx.
  * <p>
  * 2. {@code /api/webhooks/circle/mint} - Circle Mint (businessAccount)
- * payment/payout notifications, delivered as AWS SNS messages ("deposits",
+ * "v1" payment/payout notifications, delivered via AWS SNS ("deposits",
  * "payouts", "paymentIntents", ...). Configure by subscribing this URL to
- * your Mint notification topic in the Circle Dashboard; the first request
+ * your Mint notification topic in the Circle Console; the first request
  * AWS sends will be a SubscriptionConfirmation, which this endpoint
  * auto-confirms.
  * <p>
@@ -83,13 +85,19 @@ public class WebhookController {
     }
 
     JsonNode envelope = parse(rawBody);
+    // v2 envelope: subscriptionId / notificationId / notificationType /
+    // notification / timestamp / version. Circle delivers "at least once" and
+    // reuses notificationId on retries, so downstream handlers must be
+    // idempotent (ours upsert on the Circle resource id).
+    String notificationId = envelope.path("notificationId").asText("");
     String notificationType = envelope.path("notificationType").asText("");
     JsonNode notification = envelope.path("notification");
 
     if (notificationType.startsWith("transactions.")) {
+      log.info("Wallets webhook notificationId={} type={}", notificationId, notificationType);
       walletService.applyTransactionNotification(notification);
     } else if (!notificationType.equals("webhooks.test")) {
-      log.info("Ignoring wallets webhook notificationType={}", notificationType);
+      log.info("Ignoring wallets webhook notificationId={} type={}", notificationId, notificationType);
     }
 
     return ResponseEntity.ok(Map.of("status", "ok"));

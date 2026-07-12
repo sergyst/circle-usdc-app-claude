@@ -38,6 +38,16 @@ circle:
   # and then should be copied into this property (or the env var) so the
   # same set of wallets is reused on every restart.
   wallet-set-id: ${CIRCLE_WALLET_SET_ID:}
+  webhook:
+    # Public HTTPS URL Circle posts wallet (v2) notifications to. Used only by
+    # the optional NotificationSubscriptionRunner (circle.setup.register-webhook=true)
+    # to create the subscription for you. During local sandbox testing this is
+    # typically an ngrok/Cloudflare-tunnel URL pointing at this app, e.g.
+    # https://YOUR-ID.ngrok-free.app/api/webhooks/circle/wallets
+    endpoint: ${CIRCLE_WEBHOOK_ENDPOINT:}
+    # Comma-separated notification types. "*" = all; or narrow it, e.g.
+    # transactions.inbound,transactions.outbound
+    notification-types: ${CIRCLE_WEBHOOK_NOTIFICATION_TYPES:*}
   mint:
     # Circle Mint (fiat <-> USDC) requires an approved, KYB'd business
     # account. Until CIRCLE_MINT_LIVE=true is set (and real Mint

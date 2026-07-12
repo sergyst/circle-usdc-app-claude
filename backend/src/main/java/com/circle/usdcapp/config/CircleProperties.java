@@ -22,6 +22,43 @@ public class CircleProperties {
 
     private final Mint mint = new Mint();
 
+    private final Webhook webhook = new Webhook();
+
+    /**
+     * Settings for the optional startup runner that registers a v2 (Wallets)
+     * notification subscription with Circle. See NotificationSubscriptionRunner.
+     */
+    public static class Webhook {
+        /**
+         * Public HTTPS URL Circle should POST wallet notifications to, e.g.
+         * https://<your-ngrok-id>.ngrok-free.app/api/webhooks/circle/wallets
+         * Must be publicly reachable and return 2xx.
+         */
+        private String endpoint;
+
+        /**
+         * Notification types to subscribe to. "*" (default) subscribes to
+         * everything; narrow it to e.g. transactions.inbound, transactions.outbound.
+         */
+        private String notificationTypes = "*";
+
+        public String getEndpoint() {
+            return endpoint;
+        }
+
+        public void setEndpoint(String endpoint) {
+            this.endpoint = endpoint;
+        }
+
+        public String getNotificationTypes() {
+            return notificationTypes;
+        }
+
+        public void setNotificationTypes(String notificationTypes) {
+            this.notificationTypes = notificationTypes;
+        }
+    }
+
     public static class Mint {
         /** When false, buy/sell orders are processed in simulation mode. */
         private boolean live;
@@ -86,5 +123,9 @@ public class CircleProperties {
 
     public Mint getMint() {
         return mint;
+    }
+
+    public Webhook getWebhook() {
+        return webhook;
     }
 }
