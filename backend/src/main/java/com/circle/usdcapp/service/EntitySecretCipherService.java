@@ -88,7 +88,7 @@ public class EntitySecretCipherService {
      */
     public String registerEntitySecret() {
         String ciphertext = generateCiphertext();
-        JsonNode response = circleApiClient.post("/v1/w3s/config/entity", java.util.Map.of(
+        JsonNode response = circleApiClient.post("/v1/w3s/config/entity/entitySecret", java.util.Map.of(
                 "entitySecretCiphertext", ciphertext
         ));
         return response.path("data").path("recoveryFile").asText();

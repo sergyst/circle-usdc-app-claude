@@ -2,6 +2,12 @@ server:
   port: 8080
 
 spring:
+  # Loads key=value pairs from a git-ignored ./.env file (relative to the dir
+  # you run the app from, i.e. backend/). "optional:" = don't fail if it's
+  # missing; "[.properties]" tells Spring to parse the extensionless file as
+  # a properties file. Values here feed the ${...} placeholders below.
+  config:
+    import: "optional:file:.env[.properties]"
   application:
     name: circle-usdc-app
   datasource:
