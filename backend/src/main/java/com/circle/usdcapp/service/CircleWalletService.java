@@ -235,7 +235,9 @@ public class CircleWalletService {
         Optional<LedgerTransaction> existing = ledgerRepository.findByCircleTransactionId(circleTxId);
         if (existing.isPresent()) {
             LedgerTransaction tx = existing.get();
-            if (stateRaw != null) {
+            // Webhooks can arrive out of order, so never let a late notification
+            // move a transaction back off a terminal (COMPLETE/FAILED) state.
+            if (stateRaw != null && !isTerminal(tx.getState())) {
                 tx.setState(mapState(stateRaw));
             }
             if (txHash != null && !txHash.isBlank()) {
@@ -274,12 +276,34 @@ public class CircleWalletService {
         });
     }
 
+    /**
+     * Maps Circle's transaction {@code state} to our 3-value ledger state.
+     * Circle's outbound lifecycle is:
+     * INITIATED -> CLEARED -> QUEUED -> SENT -> CONFIRMED -> COMPLETE
+     * (inbound is CONFIRMED -> COMPLETE), with terminal FAILED / DENIED /
+     * CANCELLED and the transient STUCK.
+     * <p>
+     * Only COMPLETE is terminal success. CONFIRMED means "on-chain but not yet
+     * final", so it stays PENDING until COMPLETE arrives. Any unrecognised
+     * (e.g. future) state also falls through to PENDING so a new Circle state
+     * never breaks processing.
+     */
     private LedgerTransaction.TransactionState mapState(String circleState) {
+        if (circleState == null) {
+            return LedgerTransaction.TransactionState.PENDING;
+        }
         return switch (circleState) {
-            case "COMPLETE", "CONFIRMED" -> LedgerTransaction.TransactionState.COMPLETE;
-            case "FAILED", "CANCELLED", "DENIED" -> LedgerTransaction.TransactionState.FAILED;
+            case "COMPLETE" -> LedgerTransaction.TransactionState.COMPLETE;
+            case "FAILED", "DENIED", "CANCELLED" -> LedgerTransaction.TransactionState.FAILED;
+            // INITIATED, CLEARED, QUEUED, SENT, CONFIRMED, STUCK, ACCELERATED, ...
             default -> LedgerTransaction.TransactionState.PENDING;
         };
+    }
+
+    /** Terminal states never change once reached. */
+    private boolean isTerminal(LedgerTransaction.TransactionState state) {
+        return state == LedgerTransaction.TransactionState.COMPLETE
+                || state == LedgerTransaction.TransactionState.FAILED;
     }
 
     private WalletResponse toResponse(ManagedWallet wallet) {

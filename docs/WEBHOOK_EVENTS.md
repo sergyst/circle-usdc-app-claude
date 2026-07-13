@@ -121,6 +121,54 @@ response:
 Handled in this app by `WebhookController#walletsWebhook` →
 `CircleWalletService#applyTransactionNotification`.
 
+### Transaction state lifecycle (`state` field)
+
+Circle sends **one webhook per state change**, so a single transaction produces
+several notifications. Act on the `state` in each payload, not on arrival order.
+
+Outbound (funds leaving) happy path:
+
+```
+INITIATED → CLEARED → QUEUED → SENT → CONFIRMED → COMPLETE
+```
+
+Inbound (funds arriving) happy path:
+
+```
+CONFIRMED → COMPLETE
+```
+
+| State | Meaning | Terminal? |
+|---|---|---|
+| `INITIATED` | Request accepted, not yet screened | no |
+| `CLEARED` | Passed compliance / risk screening | no |
+| `QUEUED` | Queued for submission to the blockchain | no |
+| `SENT` | Broadcast on-chain, awaiting confirmation | no |
+| `CONFIRMED` | Included in a block, awaiting finality | no |
+| `COMPLETE` | Finalized on-chain — funds settled | **yes (success)** |
+| `DENIED` | Rejected by risk screening (opposite of `CLEARED`) | **yes (failure)** |
+| `FAILED` | Reverted / unrecoverable on-chain error | **yes (failure)** |
+| `CANCELLED` | Cancelled before on-chain submission | **yes (failure)** |
+| `STUCK` | Broadcast but not progressing (e.g. gas/nonce) | no (can still resolve) |
+
+The compliance gate is `INITIATED → {CLEARED | DENIED}`; only a `CLEARED`
+transaction proceeds on-chain.
+
+**This app's mapping** (`CircleWalletService#mapState`, ledger has only
+`PENDING / COMPLETE / FAILED`):
+
+- `COMPLETE` → `COMPLETE`
+- `FAILED`, `DENIED`, `CANCELLED` → `FAILED`
+- everything else (`INITIATED`, `CLEARED`, `QUEUED`, `SENT`, `CONFIRMED`,
+  `STUCK`, and any future state) → `PENDING`
+
+`CONFIRMED` deliberately maps to `PENDING`, not `COMPLETE` — it's on-chain but
+not final. A terminal state is never downgraded by a late/out-of-order webhook.
+
+Docs: [Inbound states](https://developers.circle.com/api-reference/wallets/common/transactions-inbound),
+[Outbound states](https://developers.circle.com/api-reference/wallets/common/transactions-outbound),
+[Transaction lifecycle](https://developers.circle.com/wallets/transaction-limits-and-optimizations).
+
 ---
 
 ## v1 events — Circle Mint
