@@ -6,8 +6,7 @@ import com.circle.usdcapp.service.CircleWebhookSignatureService;
 import com.circle.usdcapp.service.SnsSignatureVerificationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,9 +39,9 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/webhooks/circle")
+@Slf4j
 public class WebhookController {
 
-  private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
 
   private final CircleWebhookSignatureService walletsSignatureService;
   private final SnsSignatureVerificationService snsSignatureService;

@@ -10,8 +10,7 @@ import com.circle.usdcapp.repository.LedgerTransactionRepository;
 import com.circle.usdcapp.repository.ManagedWalletRepository;
 import com.circle.usdcapp.util.Constants;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -22,9 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class CircleWalletService {
 
-    private static final Logger log = LoggerFactory.getLogger(CircleWalletService.class);
 
     private final CircleApiClient client;
     private final CircleProperties circleProperties;

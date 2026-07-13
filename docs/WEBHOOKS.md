@@ -203,6 +203,22 @@ with the same URL.
 > prefix (`TEST_API_KEY` vs `LIVE_API_KEY`), which is why this app keeps
 > `circle.base-url: https://api.circle.com` and swaps only the key.
 
+> ### ⚠️ `api.circle.com` vs `api-sandbox.circle.com`
+> Circle's two product families disagree on how "sandbox" is selected — this
+> trips people up:
+>
+> | Product family | Sandbox host | Production host | Sandbox selected by |
+> | --- | --- | --- | --- |
+> | **Web3 Services / Programmable Wallets (v2)** — what this app uses | `https://api.circle.com` | `https://api.circle.com` | **API key prefix** (`TEST_API_KEY`) |
+> | **Circle Mint / classic Payments & Payouts (v1)** | `https://api-sandbox.circle.com` | `https://api.circle.com` | **the host** |
+>
+> So for wallets, transfers, and wallet webhooks, always use `api.circle.com`
+> with a `TEST_API_KEY` — do **not** point them at `api-sandbox.circle.com`.
+> You'd only use `api-sandbox.circle.com` when testing the **Circle Mint**
+> (v1) buy/sell flow, which is currently in simulation mode in this app. If you
+> ever split Mint onto its own base URL, keep it separate from
+> `circle.base-url`.
+
 ### Step 3 — Trigger an event and watch it arrive
 Send USDC to one of our wallets (e.g. from the Circle faucet or another wallet).
 Within seconds Circle POSTs `transactions.inbound` (`CONFIRMED`, then `COMPLETE`)

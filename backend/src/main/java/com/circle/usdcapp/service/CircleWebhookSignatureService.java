@@ -2,8 +2,7 @@ package com.circle.usdcapp.service;
 
 import com.circle.usdcapp.client.CircleApiClient;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.security.KeyFactory;
@@ -33,9 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * https://developers.circle.com/w3s/docs/web3-services-notifications-quickstart
  */
 @Service
+@Slf4j
 public class CircleWebhookSignatureService {
 
-  private static final Logger log = LoggerFactory.getLogger(CircleWebhookSignatureService.class);
   private static final String SIGNATURE_ALGORITHM = "SHA256withECDSA";
 
   private final CircleApiClient circleApiClient;

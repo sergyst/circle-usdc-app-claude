@@ -1,8 +1,7 @@
 package com.circle.usdcapp.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -39,9 +38,9 @@ import java.util.regex.Pattern;
  * and AWS's "Verifying the signatures of Amazon SNS messages" guide.
  */
 @Service
+@Slf4j
 public class SnsSignatureVerificationService {
 
-  private static final Logger log = LoggerFactory.getLogger(SnsSignatureVerificationService.class);
 
   // Only ever fetch signing certs from Amazon's own SNS domains.
   private static final Pattern ALLOWED_CERT_HOST = Pattern.compile("^sns\\.[a-z0-9-]+\\.amazonaws\\.com(\\.cn)?$");

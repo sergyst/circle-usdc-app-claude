@@ -10,8 +10,7 @@ import com.circle.usdcapp.exception.CircleApiException;
 import com.circle.usdcapp.model.MintOrder;
 import com.circle.usdcapp.repository.MintOrderRepository;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,9 +35,9 @@ import java.util.UUID;
  * relationship.
  */
 @Service
+@Slf4j
 public class CircleMintService {
 
-    private static final Logger log = LoggerFactory.getLogger(CircleMintService.class);
     private static final String SIMULATED_NOTE = "SIMULATED - this account is not connected to a live, KYB-approved Circle Mint business "
             +
             "account (circle.mint.live=false). No real funds moved. Set CIRCLE_MINT_LIVE=true and " +

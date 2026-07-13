@@ -71,6 +71,50 @@ app:
   cors:
     allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173}
 
+# ---------------------------------------------------------------------------
+# Resilience for outbound Circle API calls (see CircleApiClient).
+# ---------------------------------------------------------------------------
+resilience4j:
+  retry:
+    instances:
+      circleApi:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        # Retry ONLY on transient failures (network/timeout or Circle 5xx).
+        # 4xx client errors are not listed, so they fail fast.
+        retry-exceptions:
+          - com.circle.usdcapp.exception.CircleTransientException
+  circuitbreaker:
+    instances:
+      circleApi:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        # Only transient failures count toward tripping the breaker; a 4xx is
+        # a caller mistake, not a sign Circle is unhealthy.
+        record-exceptions:
+          - com.circle.usdcapp.exception.CircleTransientException
+
 logging:
   level:
     com.circle.usdcapp: INFO
+
+# ---------------------------------------------------------------------------
+# Production profile - activate with SPRING_PROFILES_ACTIVE=prod.
+# Setting the issuer-uri turns on JWT bearer-token auth (see SecurityConfig);
+# the dev shared-key path is used only when this is absent. There is no default
+# on OAUTH2_ISSUER_URI, so prod boot fails fast if you forget to set it.
+# ---------------------------------------------------------------------------
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI}
