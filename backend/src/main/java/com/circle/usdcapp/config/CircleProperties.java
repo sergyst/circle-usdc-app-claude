@@ -42,6 +42,13 @@ public class CircleProperties {
          */
         private String notificationTypes = "*";
 
+        /**
+         * When true, WebhookController logs the full headers and pretty-printed
+         * body of every incoming webhook. Handy in dev; turn off in production
+         * to avoid verbose/sensitive logs.
+         */
+        private boolean logPayloads = true;
+
         public String getEndpoint() {
             return endpoint;
         }
@@ -56,6 +63,14 @@ public class CircleProperties {
 
         public void setNotificationTypes(String notificationTypes) {
             this.notificationTypes = notificationTypes;
+        }
+
+        public boolean isLogPayloads() {
+            return logPayloads;
+        }
+
+        public void setLogPayloads(boolean logPayloads) {
+            this.logPayloads = logPayloads;
         }
     }
 

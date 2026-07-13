@@ -54,6 +54,9 @@ circle:
     # Comma-separated notification types. "*" = all; or narrow it, e.g.
     # transactions.inbound,transactions.outbound
     notification-types: ${CIRCLE_WEBHOOK_NOTIFICATION_TYPES:*}
+    # When true, log full headers + pretty body of every incoming webhook.
+    # Great for dev; set false in production to avoid verbose/sensitive logs.
+    log-payloads: ${CIRCLE_WEBHOOK_LOG_PAYLOADS:true}
   mint:
     # Circle Mint (fiat <-> USDC) requires an approved, KYB'd business
     # account. Until CIRCLE_MINT_LIVE=true is set (and real Mint

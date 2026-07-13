@@ -1,5 +1,6 @@
 package com.circle.usdcapp.controller;
 
+import com.circle.usdcapp.config.CircleProperties;
 import com.circle.usdcapp.service.CircleMintService;
 import com.circle.usdcapp.service.CircleWalletService;
 import com.circle.usdcapp.service.CircleWebhookSignatureService;
@@ -48,17 +49,20 @@ public class WebhookController {
   private final CircleWalletService walletService;
   private final CircleMintService mintService;
   private final ObjectMapper objectMapper;
+  private final CircleProperties circleProperties;
 
   public WebhookController(CircleWebhookSignatureService walletsSignatureService,
       SnsSignatureVerificationService snsSignatureService,
       CircleWalletService walletService,
       CircleMintService mintService,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      CircleProperties circleProperties) {
     this.walletsSignatureService = walletsSignatureService;
     this.snsSignatureService = snsSignatureService;
     this.walletService = walletService;
     this.mintService = mintService;
     this.objectMapper = objectMapper;
+    this.circleProperties = circleProperties;
   }
 
   // --- Wallets (W3S) notifications ------------------------------------
@@ -73,9 +77,13 @@ public class WebhookController {
 
   @PostMapping(value = "/wallets")
   public ResponseEntity<Map<String, String>> walletsWebhook(
+      @RequestHeader Map<String, String> headers,
       @RequestHeader(value = "X-Circle-Signature", required = false) String signature,
       @RequestHeader(value = "X-Circle-Key-Id", required = false) String keyId,
       @RequestBody String rawBody) {
+
+    // Log everything received (before verification) so nothing is hidden in dev.
+    logIncoming("wallets", headers, rawBody);
 
     byte[] rawBytes = rawBody.getBytes(StandardCharsets.UTF_8);
     if (!walletsSignatureService.verify(rawBytes, signature, keyId)) {
@@ -108,7 +116,12 @@ public class WebhookController {
   // application/json), even though the body is JSON - so this deliberately
   // has no `consumes` restriction, and the body is bound as a raw String.
   @PostMapping(value = "/mint")
-  public ResponseEntity<Map<String, String>> mintWebhook(@RequestBody String rawBody) {
+  public ResponseEntity<Map<String, String>> mintWebhook(
+      @RequestHeader Map<String, String> headers,
+      @RequestBody String rawBody) {
+
+    logIncoming("mint", headers, rawBody);
+
     JsonNode envelope = parse(rawBody);
     String type = envelope.path("Type").asText("");
 
@@ -142,5 +155,32 @@ public class WebhookController {
     } catch (Exception e) {
       throw new IllegalArgumentException("Malformed webhook JSON body: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Dumps the full headers and (pretty-printed) body of an incoming webhook.
+   * Controlled by {@code circle.webhook.log-payloads} (default true) - keep it
+   * on in dev to see exactly what Circle sends; turn it off in production to
+   * avoid verbose/sensitive logs.
+   */
+  private void logIncoming(String source, Map<String, String> headers, String rawBody) {
+    if (!circleProperties.getWebhook().isLogPayloads()) {
+      return;
+    }
+    String prettyBody;
+    try {
+      prettyBody = objectMapper.writerWithDefaultPrettyPrinter()
+          .writeValueAsString(objectMapper.readTree(rawBody));
+    } catch (Exception e) {
+      prettyBody = rawBody; // not JSON (or empty) - log as-is
+    }
+    log.info("Incoming {} webhook\n--- headers ---\n{}\n--- body ---\n{}",
+        source, formatHeaders(headers), prettyBody);
+  }
+
+  private String formatHeaders(Map<String, String> headers) {
+    StringBuilder sb = new StringBuilder();
+    headers.forEach((k, v) -> sb.append(k).append(": ").append(v).append('\n'));
+    return sb.toString().stripTrailing();
   }
 }
